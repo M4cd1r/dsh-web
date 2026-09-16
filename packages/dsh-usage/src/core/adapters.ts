@@ -190,7 +190,12 @@ const KIMI_CODING: ProviderAdapter = {
   },
 }
 
-/** GLM Coding Plan quota; auth is the RAW key without a Bearer prefix. */
+/**
+ * GLM Coding Plan quota; auth is the RAW key without a Bearer prefix. The
+ * `zai` id is the pi-ai catalog route for the international coding plan
+ * (api.z.ai); `zai-coding` stays as the legacy alias configs may still carry,
+ * `zai-coding-cn` is the mainland BigModel route (open.bigmodel.cn).
+ */
 function glmPlan(host: string, ids: readonly string[]): ProviderAdapter {
   return {
     ids,
@@ -212,10 +217,23 @@ function glmPlan(host: string, ids: readonly string[]): ProviderAdapter {
         for (const entry of limits) {
           if (typeof entry !== 'object' || entry === null) continue
           const row = entry as Record<string, unknown>
-          const unit = toNum(row.unit)
-          const percent = toNum(row.percentage)
+          // Quota windows arrive as TOKENS_LIMIT on the token-based plans and
+          // CREDIT_LIMIT on the newer credits-based plans (same 5h/weekly
+          // buckets, renamed). TIME_LIMIT rows are MCP request ceilings, not
+          // coding-plan quota windows, so they never render as a bogus bar.
+          const type = str(row.type)
+          if (type !== 'TOKENS_LIMIT' && type !== 'CREDIT_LIMIT') continue
+          const key = glmWindowKey(toNum(row.unit))
+          if (key === undefined) continue
+          // The reported percentage is a server-rounded integer; the exact
+          // currentValue (spend) / usage (allotment) ratio wins when the
+          // absolute meter is present, as on the credits-based plans.
+          const currentValue = toNum(row.currentValue)
+          const usage = toNum(row.usage)
+          const exact = currentValue !== undefined && usage !== undefined && usage > 0 ? (currentValue / usage) * 100 : undefined
+          const percent = exact ?? toNum(row.percentage)
           windows.push({
-            key: unit === 3 ? '5h' : unit === 6 ? 'week' : unit !== undefined ? `unit-${unit}` : 'window',
+            key,
             percent: percent === undefined ? undefined : Math.max(0, Math.min(100, percent)),
             resetsAt: toIso(row.nextResetTime),
           })
@@ -225,6 +243,19 @@ function glmPlan(host: string, ids: readonly string[]): ProviderAdapter {
       },
     },
   }
+}
+
+/**
+ * Map a z.ai quota window `unit` code onto the shared window key vocabulary.
+ * The codes are undocumented; observed values are 3 (5-hour session), 6
+ * (weekly) and 5 (monthly). Windows outside the shared vocabulary are dropped
+ * rather than rendered under an unlocalized key.
+ */
+function glmWindowKey(unit: number | undefined): string | undefined {
+  if (unit === 3) return '5h'
+  if (unit === 6) return 'week'
+  if (unit === 5) return 'month'
+  return undefined
 }
 
 /** OpenCode Go quota: percent-only rolling/weekly/monthly windows. */
@@ -409,7 +440,7 @@ export const PROVIDER_ADAPTERS: readonly ProviderAdapter[] = [
   moonshotBalance('api.moonshot.ai', 'USD', ['moonshotai']),
   KIMI_CODING,
   glmPlan('open.bigmodel.cn', ['zai-coding-cn']),
-  glmPlan('api.z.ai', ['zai-coding']),
+  glmPlan('api.z.ai', ['zai', 'zai-coding']),
   OPENCODE_GO,
   minimaxPlan('api.minimaxi.com', ['minimax-cn']),
   minimaxPlan('api.minimax.io', ['minimax']),

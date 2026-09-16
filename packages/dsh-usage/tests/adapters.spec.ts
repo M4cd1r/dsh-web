@@ -3,7 +3,7 @@ import { adapterFor, isDeepSeekProviderRoute, providerErrorMessage, PROVIDER_ADA
 
 describe('adapterFor', () => {
   it('serves every documented route id', () => {
-    for (const id of ['deepseek', 'deepseek-official', 'moonshotai-cn', 'moonshotai', 'kimi-coding', 'zai-coding-cn', 'zai-coding', 'opencode-go', 'minimax-cn', 'minimax', 'openai-codex', 'openrouter', 'siliconflow', 'siliconflow-intl', 'zenmux']) {
+    for (const id of ['deepseek', 'deepseek-official', 'moonshotai-cn', 'moonshotai', 'kimi-coding', 'zai-coding-cn', 'zai-coding', 'zai', 'opencode-go', 'minimax-cn', 'minimax', 'openai-codex', 'openrouter', 'siliconflow', 'siliconflow-intl', 'zenmux']) {
       expect(adapterFor(id), id).toBeDefined()
     }
     expect(adapterFor('unknown-provider')).toBeUndefined()
@@ -85,6 +85,7 @@ describe('kimi coding plan parse', () => {
 describe('glm coding plan parse', () => {
   it.each([
     ['zai-coding-cn', 'https://open.bigmodel.cn/api/monitor/usage/quota/limit'],
+    ['zai', 'https://api.z.ai/api/monitor/usage/quota/limit'],
     ['zai-coding', 'https://api.z.ai/api/monitor/usage/quota/limit'],
   ])('%s probes the raw-key quota endpoint', (id, url) => {
     const adapter = adapterFor(id)!
@@ -106,6 +107,81 @@ describe('glm coding plan parse', () => {
     expect(parsed?.windows[0]).toMatchObject({ key: '5h', percent: 12.5 })
     // Percent clamps into 0-100.
     expect(parsed?.windows[1]).toMatchObject({ key: 'week', percent: 100 })
+  })
+
+  it('serves the pi-ai catalog id `zai` and the legacy alias with one adapter', () => {
+    expect(adapterFor('zai')).toBe(adapterFor('zai-coding'))
+    expect(adapterFor('zai')).toBeDefined()
+  })
+
+  it('keys windows by unit, not by array position', () => {
+    const adapter = adapterFor('zai')!
+    const parsed = adapter.plan!.parse(200, {
+      success: true,
+      data: {
+        level: 'pro',
+        limits: [
+          { type: 'TOKENS_LIMIT', percentage: 15, unit: 6, nextResetTime: 1788300000000 },
+          { type: 'TOKENS_LIMIT', percentage: 42, unit: 3 },
+        ],
+      },
+    })
+    expect(parsed?.windows).toEqual([
+      { key: 'week', percent: 15, resetsAt: new Date(1788300000000).toISOString() },
+      { key: '5h', percent: 42, resetsAt: undefined },
+    ])
+  })
+
+  it('prefers the exact credit ratio over the rounded percentage', () => {
+    const adapter = adapterFor('zai')!
+    const parsed = adapter.plan!.parse(200, {
+      success: true,
+      data: {
+        level: 'lite',
+        limits: [
+          { type: 'CREDIT_LIMIT', unit: 3, number: 5, usage: 12000, currentValue: 1438, percentage: 11 },
+          { type: 'CREDIT_LIMIT', unit: 6, number: 1, usage: 60000, currentValue: 3000, percentage: 4 },
+        ],
+      },
+    })
+    expect(parsed?.planName).toBe('lite')
+    expect(parsed?.windows[0]).toMatchObject({ key: '5h' })
+    expect(parsed?.windows[0]?.percent).toBeCloseTo((1438 / 12000) * 100, 6)
+    expect(parsed?.windows[1]).toMatchObject({ key: 'week', percent: 5 })
+  })
+
+  it('renders a legacy 5h-only plan as a single window', () => {
+    const adapter = adapterFor('zai')!
+    const parsed = adapter.plan!.parse(200, {
+      success: true,
+      data: {
+        limits: [{ type: 'TOKENS_LIMIT', unit: 3, percentage: 60, nextResetTime: 1788000000000 }],
+      },
+    })
+    expect(parsed?.windows).toEqual([
+      { key: '5h', percent: 60, resetsAt: new Date(1788000000000).toISOString() },
+    ])
+  })
+
+  it('skips TIME_LIMIT request ceilings and unknown window units', () => {
+    const adapter = adapterFor('zai')!
+    const parsed = adapter.plan!.parse(200, {
+      success: true,
+      data: {
+        limits: [
+          { type: 'TIME_LIMIT', unit: 5, usage: 1000, currentValue: 0, percentage: 0 },
+          { type: 'TOKENS_LIMIT', unit: 7, percentage: 99 },
+          { type: 'TOKENS_LIMIT', unit: 3, percentage: 20 },
+        ],
+      },
+    })
+    expect(parsed?.windows).toEqual([{ key: '5h', percent: 20, resetsAt: undefined }])
+  })
+
+  it('rejects failure envelopes carried inside a 200 response', () => {
+    const adapter = adapterFor('zai')!
+    expect(adapter.plan!.parse(200, { code: 401, msg: 'invalid token', success: false, data: null })).toBeUndefined()
+    expect(adapter.plan!.parse(200, { data: { limits: [{ type: 'TOKENS_LIMIT', unit: 3, percentage: 0 }] } })).toBeUndefined()
   })
 })
 
