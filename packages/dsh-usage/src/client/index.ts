@@ -18,6 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createElement } from 'react'
 import { createUsageStore, type UsageStoreInstance } from './usage-store.ts'
 import { UsageSectionCard, type UsageSectionFace, type UsageSettings } from './UsageSectionCard.tsx'
+import { mountUsageSidebarBlock } from './sidebar-block.ts'
 import { NS, en, zh } from './locales.ts'
 import type { UsageOverviewView } from '../core/types.ts'
 
@@ -140,4 +141,29 @@ export function apply(ctx: ClientContext): void {
       return () => {}
     }
   })
+
+  // Sidebar block lifecycle: the panel lives in the sidebar family, not in a
+  // slot, so it mounts here and follows the same settings scope the section's
+  // checkboxes write through — a disable (host routes gone) or the sidebar
+  // toggle removes it live, without a reload.
+  ctx.effect(() => {
+    let disposeBlock: (() => void) | undefined
+    const sync = (): void => {
+      const value = settingsScope.getSnapshot().value ?? {}
+      const wanted = (value.enabled ?? true) && (value.sidebarPanel ?? true)
+      if (!wanted) {
+        disposeBlock?.()
+        disposeBlock = undefined
+        return
+      }
+      disposeBlock ??= mountUsageSidebarBlock({ store, poll, refresh, locale: ctx.locale })
+    }
+    const unsubscribe = settingsScope.subscribe(sync)
+    sync()
+    return () => {
+      unsubscribe()
+      disposeBlock?.()
+      disposeBlock = undefined
+    }
+  }, 'dsh-usage: sidebar panel')
 }
