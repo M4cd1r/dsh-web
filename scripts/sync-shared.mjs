@@ -196,6 +196,7 @@ const MANIFEST = [
       'packages/dsh-ssh/src/client/body-mutations.ts',
       'packages/dsh-task-board/src/client/body-mutations.ts',
       'packages/dsh-skill-explorer/src/client/body-mutations.ts',
+      'packages/dsh-usage/src/client/body-mutations.ts',
       'packages/dsh-web-all/src/client/body-mutations.ts',
     ],
   },
@@ -206,6 +207,7 @@ const MANIFEST = [
       'packages/dsh-ssh/src/client/sidebar-entry-core.ts',
       'packages/dsh-task-board/src/client/sidebar-entry-core.ts',
       'packages/dsh-skill-explorer/src/client/sidebar-entry-core.ts',
+      'packages/dsh-usage/src/client/sidebar-entry-core.ts',
     ],
   },
   {
