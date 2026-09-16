@@ -55,9 +55,17 @@ const settings = {
 function liveSettings(initial: UsageSettings): { scope: SettingsScope<UsageSettings>; set: (patch: UsageSettings) => void } {
   let value: UsageSettings = { ...initial }
   let listeners: Array<() => void> = []
+  const notify = (): void => {
+    for (const listener of [...listeners]) listener()
+  }
   const scope = {
     getSnapshot: () => ({ status: 'ready', writable: true, value }),
-    set: async () => {},
+    // Write-through: the component edits its own flags through this path, so
+    // a checkbox toggle must land in the snapshot for the assertion to read.
+    set: async (_key: string, next: boolean) => {
+      value = { ...value, [_key]: next }
+      notify()
+    },
     subscribe: (listener: () => void) => {
       listeners.push(listener)
       return () => { listeners = listeners.filter((candidate) => candidate !== listener) }
@@ -67,7 +75,7 @@ function liveSettings(initial: UsageSettings): { scope: SettingsScope<UsageSetti
     scope,
     set: (patch: UsageSettings) => {
       value = { ...value, ...patch }
-      for (const listener of [...listeners]) listener()
+      notify()
     },
   }
 }
@@ -192,7 +200,7 @@ describe('UsageSectionCard disabled and failed states', () => {
     render(<UsageSectionCard {...cardProps(overview(mixed))} poll={poll} settings={scope} />)
     expect(poll).not.toHaveBeenCalled()
     expect(screen.getByText(/插件已停用/)).toBeTruthy()
-    expect(screen.getByRole('checkbox')).toBeTruthy()
+    expect(screen.getByLabelText('启用插件')).toBeTruthy()
   })
 
   it('resumes polling once the plugin is enabled again', () => {
@@ -209,6 +217,27 @@ describe('UsageSectionCard disabled and failed states', () => {
     const failing = fakeStore({ snapshot: null, status: 'error', error: 'usage /api/dsh-usage/overview failed: 500' })
     render(<UsageSectionCard {...cardProps(overview(mixed))} store={failing} />)
     expect(screen.getByText(/failed: 500/)).toBeTruthy()
-    expect(screen.getByRole('checkbox')).toBeTruthy()
+    expect(screen.getByLabelText('启用插件')).toBeTruthy()
+  })
+})
+
+/**
+ * The settings row's sidebar toggle: the browser side mounts the sidebar
+ * panel only while this flag is on, so the checkbox must render with the
+ * schema default (on) and write through the settings scope.
+ */
+describe('Settings row sidebar toggle', () => {
+  it('defaults to on and writes through the scope', () => {
+    const { scope } = liveSettings({})
+    render(<UsageSectionCard {...cardProps(overview(mixed))} settings={scope} />)
+    const toggle = screen.getByLabelText('显示侧边栏用量') as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+
+    act(() => { fireEvent.click(toggle) })
+    const after = screen.getByLabelText('显示侧边栏用量') as HTMLInputElement
+    expect(after.checked).toBe(false)
+
+    act(() => { fireEvent.click(after) })
+    expect((screen.getByLabelText('显示侧边栏用量') as HTMLInputElement).checked).toBe(true)
   })
 })

@@ -95,12 +95,12 @@ afterEach(() => {
 
 describe('resolveConfig', () => {
   it('applies documented defaults', () => {
-    expect(resolveConfig()).toEqual({ enabled: true, pollIntervalSec: 60, bubbleMode: 'always', retainDays: 180 })
+    expect(resolveConfig()).toEqual({ enabled: true, pollIntervalSec: 60, bubbleMode: 'always', retainDays: 180, sidebarPanel: true })
   })
 
   it('coerces out-of-band values into the enum and keeps valid ones', () => {
     expect(resolveConfig({ bubbleMode: 'off', pollIntervalSec: 120, enabled: false, retainDays: 30 })).toEqual({
-      enabled: false, pollIntervalSec: 120, bubbleMode: 'off', retainDays: 30,
+      enabled: false, pollIntervalSec: 120, bubbleMode: 'off', retainDays: 30, sidebarPanel: true,
     })
     expect(resolveConfig({ bubbleMode: 'yolo' }).bubbleMode).toBe('always')
     expect(resolveConfig({ pollIntervalSec: 'fast' as unknown as Config['pollIntervalSec'] }).pollIntervalSec).toBe(60)

@@ -18,6 +18,8 @@ export interface Config {
   bubbleMode?: string
   /** Ledger retention in local days. */
   retainDays?: number
+  /** Whether the browser side seats the usage panel in the sidebar family. */
+  sidebarPanel?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -25,10 +27,12 @@ export const Config: z<Config> = z.object({
   pollIntervalSec: z.number().min(30).max(3600).default(60),
   bubbleMode: z.string().default('always'),
   retainDays: z.number().min(7).max(730).default(180),
+  sidebarPanel: z.boolean().default(true),
 })
 
 export interface ResolvedConfig extends UsageServiceOptions {
   enabled: boolean
+  sidebarPanel: boolean
 }
 
 export function resolveConfig(config?: Config): ResolvedConfig {
@@ -38,6 +42,7 @@ export function resolveConfig(config?: Config): ResolvedConfig {
     pollIntervalSec: typeof config?.pollIntervalSec === 'number' ? config.pollIntervalSec : 60,
     bubbleMode,
     retainDays: typeof config?.retainDays === 'number' ? config.retainDays : 180,
+    sidebarPanel: config?.sidebarPanel ?? true,
   }
 }
 

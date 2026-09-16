@@ -23,6 +23,7 @@ export interface UsageSettings {
   enabled?: boolean
   pollIntervalSec?: number
   bubbleMode?: string
+  sidebarPanel?: boolean
 }
 
 /** The registration-side face the section's slot entry injects. */
@@ -568,6 +569,15 @@ function SettingsRow(props: {
               if (Number.isFinite(parsed) && parsed >= 30 && parsed <= 3600) void settings.set('pollIntervalSec', Math.round(parsed))
             }}
           />
+        </label>
+        <label className={styles.settingItem}>
+          <input
+            type="checkbox"
+            checked={value.sidebarPanel ?? true}
+            disabled={disabled}
+            onChange={(event) => { void settings.set('sidebarPanel', event.target.checked) }}
+          />
+          {t('usage.config.sidebarPanel')}
         </label>
         <label className={styles.settingItem}>
           {t('usage.config.bubbleMode')}
