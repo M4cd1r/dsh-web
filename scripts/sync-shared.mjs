@@ -149,7 +149,7 @@ const MANIFEST = [
   {
     file: 'pair-access.ts',
     source: 'shared/host/pair-access.ts',
-    targets: ['packages/dsh-git-graph/src/host/pair-access.ts', 'packages/dsh-pet/src/pair-access.ts', 'packages/dsh-skill-explorer/src/pair-access.ts'],
+    targets: ['packages/dsh-git-graph/src/host/pair-access.ts', 'packages/dsh-pet/src/pair-access.ts', 'packages/dsh-skill-explorer/src/pair-access.ts', 'packages/dsh-usage/src/host/pair-access.ts'],
   },
   {
     file: 'loopback.ts',

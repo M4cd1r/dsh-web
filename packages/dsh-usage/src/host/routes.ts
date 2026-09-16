@@ -1,22 +1,24 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import type { Context } from '@deepseek-ai/cordis'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
-import { isLoopbackRequest } from './loopback.ts'
+import { isUsageAllowed } from './access.ts'
 import { writeJson } from './http.ts'
 import type { UsageService } from './usage-service.ts'
 
 export const USAGE_API_PREFIX = '/api/dsh-usage'
 
 /**
- * Loopback-fenced overview route: provider balances, plan quotas, and token
- * usage totals. Personal account data, so the loopback fence mirrors
- * dsh-perf's stats surface; the browser runs on the same machine.
+ * Overview route: provider balances, plan quotas, and token usage totals.
+ * Personal account data, so loopback always passes and a live paired-device
+ * cookie is the only remote allow path. Without a pairing service or cookie,
+ * this remains loopback-only.
  */
-export function makeUsageOverviewRoute(service: UsageService): WebRoute {
+export function makeUsageOverviewRoute(service: UsageService, ctx: Context = {} as Context): WebRoute {
   return {
     kind: 'exact',
     path: USAGE_API_PREFIX + '/overview',
     handler: async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-      if (!isLoopbackRequest(req)) {
+      if (!isUsageAllowed(ctx, req)) {
         writeJson(res, 403, { ok: false, error: 'forbidden: loopback-only' })
         return
       }
@@ -26,15 +28,15 @@ export function makeUsageOverviewRoute(service: UsageService): WebRoute {
 }
 
 /**
- * Loopback-fenced manual refresh: forces one probe cycle now and answers
- * with the fresh overview.
+ * Manual refresh route: forces one probe cycle now and answers with the fresh
+ * overview. Uses the same paired-or-loopback fence as the overview route.
  */
-export function makeUsageRefreshRoute(service: UsageService): WebRoute {
+export function makeUsageRefreshRoute(service: UsageService, ctx: Context = {} as Context): WebRoute {
   return {
     kind: 'exact',
     path: USAGE_API_PREFIX + '/refresh',
     handler: async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-      if (!isLoopbackRequest(req)) {
+      if (!isUsageAllowed(ctx, req)) {
         writeJson(res, 403, { ok: false, error: 'forbidden: loopback-only' })
         return
       }

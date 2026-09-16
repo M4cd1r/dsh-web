@@ -64,6 +64,23 @@ describe('usage routes', () => {
     expect(await res.json()).toEqual(OVERVIEW)
   })
 
+  it('serves the overview to a paired LAN client', async () => {
+    const paired = { get: () => ({ isPairedDevice: () => true }) }
+    const route = makeUsageOverviewRoute(stubService(), paired as never)
+    const state = { status: 0, body: '' }
+    const res = {
+      writeHead: (status: number) => { state.status = status },
+      end: (body?: string) => { state.body = body ?? '' },
+    } as unknown as ServerResponse
+    await route.handler({
+      method: 'GET',
+      socket: { remoteAddress: '192.168.1.20' },
+      headers: { host: '192.168.1.10:3080', cookie: 'dsh_pair=dev-1' },
+    } as unknown as IncomingMessage, res)
+    expect(state.status).toBe(200)
+    expect(JSON.parse(state.body)).toEqual(OVERVIEW)
+  })
+
   it('answers 405 when the refresh endpoint is not POSTed', async () => {
     const res = await fetch(url(USAGE_API_PREFIX + '/refresh'))
     expect(res.status).toBe(405)

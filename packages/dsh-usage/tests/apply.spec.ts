@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -117,6 +118,27 @@ describe('host apply', () => {
       '/api/dsh-usage/refresh',
     ])
     expect(listeners()).toBe(1)
+  })
+
+  it('passes the live host context to the registered overview route', async () => {
+    const scope = makeScope({})
+    const { ctx, registered } = makeCtx(scope)
+    apply(ctx, {})
+    const route = registered.get('/api/dsh-usage/overview')
+    expect(route).toBeDefined()
+    const host = ctx as unknown as { get: (name: string) => unknown }
+    host.get = (name: string) => (name === 'remoteWebUiPairing' ? { isPairedDevice: () => true } : undefined)
+    const state = { status: 0, body: '' }
+    const res = {
+      writeHead: (status: number) => { state.status = status },
+      end: (body?: string) => { state.body = body ?? '' },
+    } as unknown as ServerResponse
+    await route?.handler({
+      method: 'GET',
+      socket: { remoteAddress: '192.168.1.20' },
+      headers: { host: '192.168.1.10:3080', cookie: 'dsh_pair=dev-1' },
+    } as unknown as IncomingMessage, res)
+    expect(state.status).toBe(200)
   })
 
   it('mounts nothing when the plugin is disabled', () => {
