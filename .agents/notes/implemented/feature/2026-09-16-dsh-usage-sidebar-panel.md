@@ -35,7 +35,10 @@ gains one config key (`sidebarPanel`, default `true`) surfaced as a checkbox
 in the section's settings row; the browser half mounts and unmounts the
 block live from the same settings scope (the plugin's `enabled` switch gates
 it too). New part value `sidebar-panel` added to the semantic-attrs
-contract, owned by `usage`.
+contract, owned by `usage`. The `/api/dsh-usage` overview and refresh routes
+accept loopback and live paired-device requests, matching the
+skill-center/pet/git-graph fence; unpaired, revoked, or unknown LAN devices
+still receive `403`.
 
 ## Architecture
 
@@ -48,6 +51,8 @@ contract, owned by `usage`.
   (`enabled` AND `sidebarPanel`).
 - `scripts/sync-shared.mjs` gained `dsh-usage` consumers for
   `sidebar-entry-core.ts` and `body-mutations.ts` (generated copies).
+- `src/host/access.ts` wraps the shared synced `pair-access.ts` fence, and
+  the usage route constructors receive the live host context.
 - The dsh-web-all aggregate inlines the client half; its committed `lib/`
   and `scripts/lib-artifact-fingerprints.json` change with the same PR.
 
@@ -65,6 +70,9 @@ contract, owned by `usage`.
 - Extending the shared `sidebar-entry-core` to mount a wrapper element:
   would have changed the family contract for all four consumers; a sibling
   panel with its own placement observer keeps the core untouched.
+- Leaving overview/refresh loopback-only: rejected because a paired LAN
+  browser would keep receiving `403` for the same personal-account document
+  the panel needs.
 
 ## Consequences
 
@@ -79,3 +87,5 @@ contract, owned by `usage`.
 - `sidebarPanel` defaults to `true`, so existing profiles show the panel
   without configuration; disabling it removes the entry live without
   touching the settings section.
+- Remote access adds no dependency on `dsh-remote-web-ui`: without its live
+  pairing service, LAN requests remain `403` exactly as before.

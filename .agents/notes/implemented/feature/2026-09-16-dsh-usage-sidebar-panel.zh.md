@@ -27,7 +27,9 @@ provider 还剩多少订阅 / API 配额没有任何提示。dsh-usage 插件本
 保持位置。宿主半区只新增一个配置键（`sidebarPanel`，默认 `true`），经分区设置行
 的复选框暴露；浏览器半区通过同一 settings scope 即时挂载 / 卸载（插件自身的
 `enabled` 开关同样约束它）。语义契约新增 `sidebar-panel` part 值，owner 为
-`usage`。
+`usage`。`/api/dsh-usage` 的 overview 与 refresh 路由同时接受 loopback 与
+有效配对设备请求，与技能中心 / 宠物 / Git 图谱的围栏一致；未配对、被撤销或
+未知的局域网设备仍返回 `403`。
 
 ## Architecture
 
@@ -39,6 +41,8 @@ provider 还剩多少订阅 / API 配额没有任何提示。dsh-usage 插件本
   下挂载面板。
 - `scripts/sync-shared.mjs` 为 `dsh-usage` 增加 `sidebar-entry-core.ts` 与
   `body-mutations.ts` 的同步副本消费者。
+- `src/host/access.ts` 封装共享同步的 `pair-access.ts` 围栏，用量路由构造函数
+  接收实时宿主 context。
 - dsh-web-all 聚合包内联浏览器半区；其提交的 `lib/` 与
   `scripts/lib-artifact-fingerprints.json` 随同一 PR 更新。
 
@@ -51,6 +55,8 @@ provider 还剩多少订阅 / API 配额没有任何提示。dsh-usage 插件本
   收益；家族先例（task-board / ssh / skill-explorer）均为纯 DOM + 自愈占位。
 - 扩展共享 `sidebar-entry-core` 挂载包装元素：会改动全部四个消费者的家族契约；
   面板作为兄弟节点由自己的占位观察器跟随，核心保持不动。
+- 保持 overview/refresh 仅 loopback：否决，因为已配对的局域网浏览器会继续对面板
+  所需的同一份个人账户文档收到 `403`。
 
 ## Consequences
 
@@ -61,3 +67,5 @@ provider 还剩多少订阅 / API 配额没有任何提示。dsh-usage 插件本
 - dsh-web-all 聚合包体增加约 30 kB；其 lib/ 产物与指纹同步刷新。
 - `sidebarPanel` 默认 `true`，存量 profile 无需配置即显示面板；关闭后入口即时
   消失，设置分区不受影响。
+- 远程访问不新增对 `dsh-remote-web-ui` 的依赖：没有其实时配对服务时，局域网请求
+  与以前一样返回 `403`。
