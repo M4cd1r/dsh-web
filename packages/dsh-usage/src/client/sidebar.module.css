@@ -1,0 +1,247 @@
+/* dsh-usage sidebar block: the family entry row (mirrors the task-board / ssh
+   entry look: 36px row on the shell's nav tokens) plus the collapsible panel
+   hanging under it. Quiet card styling on host surface tokens, no framework
+   style imports; neutral grays follow the GUI text color so the block reads
+   on light and dark themes alike. */
+
+.entry {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.entry:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.entry:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.entryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+.entryIcon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+/* The chevron is appended to the core-built row by sidebar-block.ts; it points
+   down while expanded and turns to the collapsed direction when hidden. */
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-left: auto;
+  transition: transform 120ms ease;
+}
+
+.entry[aria-expanded="false"] .chevron {
+  transform: rotate(-90deg);
+}
+
+.entryLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: none;
+}
+
+/* Collapsed rail: icon-only, centered, matching the shell's 36px rail. */
+:global([data-dsh-frame][data-sidebar-collapsed]) .entry,
+:global([data-sidebar-collapsed]) .entry {
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+:global([data-dsh-frame][data-sidebar-collapsed]) .entryLabel,
+:global([data-sidebar-collapsed]) .entryLabel {
+  display: none;
+}
+
+/* --- panel ---------------------------------------------------------------- */
+
+.panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 8px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 10px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panelUpdated {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refreshBtn {
+  appearance: none;
+  flex: none;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.refreshBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.refreshBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.providerList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.provider {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.providerHead,
+.balanceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.providerName {
+  color: var(--dsw-alias-label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.balanceText {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary);
+}
+
+.window {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.windowLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.windowLabel {
+  opacity: 0.85;
+}
+
+.windowPct {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  overflow: hidden;
+}
+
+.barFill,
+.barWarn,
+.barLow {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dsw-alias-label-secondary);
+  transition: width 200ms ease;
+}
+
+.barWarn {
+  background: #d99a2b;
+}
+
+.barLow {
+  background: #d95f5f;
+}
+
+.resetLine {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.muted {
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusLine {
+  opacity: 0.7;
+}
+
+.errorLine {
+  color: #d95f5f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
