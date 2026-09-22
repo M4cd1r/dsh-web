@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(new URL('../src/client/remote.module.css', import.meta.url), 'utf8')
+const entrySource = readFileSync(new URL('../src/client/RemoteEntry.tsx', import.meta.url), 'utf8')
 
 /** Extract one rule block body by its full selector. */
 function ruleBody(selector: string): string {
@@ -27,5 +28,26 @@ describe('sidebar footer trigger shape family', () => {
     const wide = ruleBody(".trigger[data-wide='wide']")
     expect(wide).toContain('border-radius: 999px')
     expect(/border-radius:\s*8px/.test(wide)).toBe(false)
+  })
+})
+
+/**
+ * Collapsed rail: the shell centres the footer-action seat as one horizontal
+ * strip, so two 36px registrants make it 78px wide inside the 56px rail and
+ * every circle in it lands outside the rail's icon column. The pin stacks the
+ * seat while this entry carries the rail marker; the marker itself is the
+ * `wide` seat prop, so wide mode never matches.
+ */
+describe('sidebar footer rail seat pin', () => {
+  const railSeat = ":global(*:has(> [data-slot='sidebar.footer.action'] [data-rail='rail']))"
+
+  it('stacks the footer seat in the rail', () => {
+    const body = ruleBody(railSeat)
+    expect(body).toContain('flex-direction: column')
+    expect(body).toContain('align-items: center')
+  })
+
+  it('keys the pin on the rail marker the entry sets from the wide prop', () => {
+    expect(entrySource).toContain("data-rail={wide ? undefined : 'rail'}")
   })
 })

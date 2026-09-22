@@ -784,6 +784,19 @@
   gap: 4px;
 }
 
+/* Rail: the shell centres the whole footer-action seat as one horizontal strip
+   (justify-content:center; width:auto). Two 36px registrants make that strip
+   78px wide inside the 56px rail, so it is centred with 21px hanging past each
+   edge and every circle in it lands outside the 36px icon column the other rail
+   rows use. Those rows stack in the column, so pin the seat to a column while
+   this entry is the rail one; wide mode keeps the shell's row. Idempotent with
+   the same pin shipped by another footer-action registrant. */
+:global(*:has(> [data-slot='sidebar.footer.action'] [data-rail='rail'])) {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ── update panel extras ─────────────────────────────────────────────── */
 
 .updateStatus {
